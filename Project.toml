@@ -1,0 +1,4 @@
+name = "DiffRules"
+uuid = "4a85079b-24f8-4f57-872a-c3fcf034480c"
+authors = ["femtomc <mccoybecker@gmail.com>"]
+version = "0.1.0"
