@@ -2,5 +2,5 @@
 
 Relevant literature:
 
-[Incremental computing with names](https://arxiv.org/abs/1503.07792)
-[Adapton: composable, demand-driven incremental computation](http://matthewhammer.org/adapton/adapton-pldi2014.pdf)
+- [Incremental computing with names](https://arxiv.org/abs/1503.07792)
+- [Adapton: composable, demand-driven incremental computation](http://matthewhammer.org/adapton/adapton-pldi2014.pdf)
