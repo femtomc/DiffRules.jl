@@ -1,74 +1,50 @@
-"""
-    abstract type Diff end
-
-Abstract type for information about a change to a value.
-"""
 abstract type Diff end
+abstract type AbstractDiff <: Diff end
+abstract type RuntimeDiff <: AbstractDiff end
 
-"""
-    Change
+struct Change <: AbstractDiff end
+struct NoChange <: RuntimeDiff end
 
-No information is provided about the change to the value.
-"""
-struct Change <: Diff end
-
-"""
-    NoChange
-
-The value did not change.
-"""
-struct NoChange <: Diff end
-
-struct SetDiff{V} <: Diff
-
-    # elements that were added
+struct SetDiff{V} <: RuntimeDiff
     added::Set{V}
-
-    # elements that were deleted
     deleted::Set{V}
 end
 
-struct DictDiff{K,V} <: Diff
-
-    # keys that that were added and their values
+struct DictDiff{K,V} <: RuntimeDiff
     added::AbstractDict{K,V}
-
-    # keys that were deleted
     deleted::AbstractSet{K}
-
-    # map from key to diff value for that key
-    updated::AbstractDict{K,Diff}
+    updated::AbstractDict{K, RuntimeDiff}
 end
 
-struct VectorDiff <: Diff
+struct VectorDiff <: RuntimeDiff
     new_length::Int
     prev_length::Int
-    updated::Dict{Int,Diff}
+    updated::Dict{Int, RuntimeDiff}
 end
 
-struct IntDiff <: Diff
+struct IntDiff <: RuntimeDiff
     difference::Int # new - old
 end
 
-struct ScalarDiff{K} <: Diff
+struct ScalarDiff{K} <: RuntimeDiff
     diff::K
 end
 
-struct BoolDiff <: Diff
+struct BoolDiff <: RuntimeDiff
     new::Bool
 end
 
-"""
-   Diffed{V,DV <: Diff}
+lift(val) = NoChange()
+lift(::RuntimeDiff) = Change()
+lift(::Type{<:RuntimeDiff}) = Change
 
-Container for a value and information about a change to its value.
-"""
-struct Diffed{V,DV <: Diff}
+# ------------ Container ------------ #
+
+struct Diffed{V, DV <: Diff}
    value::V
    diff::DV
 end
 
+get_value(value) = value
+get_value(diffed::Diffed) = diffed.value
 get_diff(diffed::Diffed) = diffed.diff
-get_diff(value) = NoChange()
-strip_diff(diffed::Diffed) = diffed.value
-strip_diff(value) = value
