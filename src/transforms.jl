@@ -1,3 +1,9 @@
+# Check if there are branches.
+function control_flow_check(ir)
+    length(ir.blocks) > 1 && return false
+    return true
+end
+
 @inline check_change(st) = st.type == Change
 @inline function check_removable(st)
     ex = st.expr

@@ -13,6 +13,7 @@ struct DynamicCallGraph{V}
     ret::V
 end
 get_ret(dcg::DynamicCallGraph) = dcg.ret
+get_subgraph(dcg::DynamicCallGraph, addr) = dcg.recursed[addr]
 
 # ------------ Pretty printing ------------ #
 
@@ -46,6 +47,7 @@ abstract type ExecutionContext end
 @inline record!(mx::E, addr, cs::CachedSite) where E <: ExecutionContext = mx.addressed[addr] = cs
 @inline record!(mx::E, addr, gr::DynamicCallGraph) where E <: ExecutionContext = mx.recursed[addr] = gr
 @inline visit!(mx::E, addr) where E <: ExecutionContext = addr in mx.visited ? error("Already visited $addr.") : push!(mx.visited, addr)
+@inline get_subgraph(mx::E, addr) where E <: ExecutionContext = mx.recursed[addr]
 
 struct RecordContext <: ExecutionContext
     addressed::Dict{Symbol, CachedSite}
@@ -127,20 +129,27 @@ end
 end
 
 @dynamo function (mx::IncrementalContext)(f, ::Type{S}, args...) where S <: Tuple
-
-    # Check for primitive.
     ir = IR(f, S.parameters...)
     ir == nothing && return
-    #ir = recur(ir)
-    tr = diff_inference(f, S.parameters, args)
-    argument!(ir, at = 2)
-    ir = optimization_pipeline(ir.meta, tr)
+    if control_flow_check(ir)
+        tr = diff_inference(f, S.parameters, args)
+        argument!(ir, at = 2)
+        ir = optimization_pipeline(ir.meta, tr)
+    else
+        argument!(ir, at = 2)
+        ir = recur(ir)
+    end
     ir
 end
 
 @inline function (mx::IncrementalContext)(::typeof(cache), addr, fn, args...)
     visit!(mx, addr)
-    _, retdiff, graph = track(fn, args...)
+    if haskey(mx.recursed, addr)
+        subgraph = get_subgraph(mx, addr)
+        ret, retdiff, graph = change(subgraph, args...)
+    else
+        ret, retdiff, graph = track(fn, args...)
+    end
     record!(mx, addr, graph)
     retdiff
 end
