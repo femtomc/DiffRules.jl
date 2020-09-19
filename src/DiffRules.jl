@@ -8,6 +8,8 @@ using Mjolnir
 using Mjolnir: Basic, AType, Const, abstract, Multi, @abstract, Partial, Node
 using Mjolnir: Defaults
 
+import Base: collect, display
+
 include("types.jl")
 include("ctx.jl")
 
@@ -22,6 +24,7 @@ include("abstract_lib/distributions.jl")
 include("abstract_lib/numeric.jl")
 
 include("interface.jl")
+include("transforms.jl")
 include("incremental.jl")
 
 export Diff
@@ -29,5 +32,8 @@ export get_diff, strip_diff
 export UnknownChange, NoChange
 export SetDiff, DictDiff, VectorDiff
 export IntDiff
+
+export track, cache, collect
+export Δ, change
 
 end # module

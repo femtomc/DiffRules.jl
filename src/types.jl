@@ -34,8 +34,8 @@ struct BoolDiff <: RuntimeDiff
     new::Bool
 end
 
-lift(val) = NoChange()
-lift(::RuntimeDiff) = Change()
+lift(val) = NoChange
+lift(::R) where R <: RuntimeDiff = Change
 lift(::Type{<:RuntimeDiff}) = Change
 
 # ------------ Container ------------ #
@@ -45,6 +45,10 @@ struct Diffed{V, DV <: Diff}
    diff::DV
 end
 
-get_value(value) = value
-get_value(diffed::Diffed) = diffed.value
-get_diff(diffed::Diffed) = diffed.diff
+@inline strip_diff(value) = value
+@inline strip_diff(diffed::Diffed) = diffed.value
+@inline get_diff(diffed::Diffed) = diffed.diff
+@inline valtype(d::Diffed{V, DV}) where {V, DV} = V
+@inline difftype(d::Diffed{V, DV}) where {V, DV} = DV
+@inline difftype(d::Type{Diffed{V, DV}}) where {V, DV} = DV
+@inline tupletype(dfs::Diffed...) = Tuple{map(d -> valtype(d), dfs)...}

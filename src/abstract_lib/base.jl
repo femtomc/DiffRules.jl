@@ -4,3 +4,4 @@
 @abstract DiffPrimitives typeassert(args...) = propagate(args...)
 @abstract DiffPrimitives sleep(args...) = propagate(args...)
 @abstract DiffPrimitives collect(args...) = propagate(args...)
+@abstract DiffPrimitives Core._apply_iterate(args...) = propagate(args...)
