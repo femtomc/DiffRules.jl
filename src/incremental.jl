@@ -141,21 +141,22 @@ end
 @dynamo function (mx::IncrementalContext)(f, ::Type{S}, args...) where S <: Tuple
     ir = IR(f, S.parameters...)
     ir == nothing && return
-    if control_flow_check(ir)
+    #if control_flow_check(ir)
         tr = diff_inference(f, S.parameters, args)
         argument!(ir, at = 2)
         ir = optimization_pipeline(ir.meta, tr)
-    else
-        argument!(ir, at = 2)
-        ir = recur(ir)
-    end
+    #else
+    #    argument!(ir, at = 2)
+    #    ir = recur(ir)
+    #end
     ir
 end
 
 @inline function (mx::IncrementalContext)(::typeof(cache), addr, fn, args...)
     visit!(mx, addr)
+    args = map(a -> strip_diff(a), args)
     ret = fn(args...)
-    record!(mx, addr, CachedSite(fn, map(a -> strip_diff(a), args), strip_diff(ret)))
+    record!(mx, addr, CachedSite(fn, args, strip_diff(ret)))
     ret
 end
 

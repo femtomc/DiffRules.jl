@@ -7,5 +7,7 @@ using .DiffRules
 
 ret, retdiff, cached = record(fib, 25)
 display(cached)
+ret, retdiff, cached = change(cached, Δ(26, IntDiff(1)))
+display(cached)
 
 end # module
