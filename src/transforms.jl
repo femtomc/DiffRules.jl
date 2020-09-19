@@ -10,7 +10,8 @@ end
     ex isa Expr &&
     ex.head == :call && 
     (ex.args[1] isa IRTools.Inner.Self ||
-    (ex.args[1] isa GlobalRef && ex.args[1].name == :record_cached!))
+    (ex.args[1] isa GlobalRef && ex.args[1].name == :record_cached!) ||
+    (ex.args[1] isa GlobalRef && ex.args[1].name == :record_track!))
 end
 
 # This pass is a dataflow analysis which determines what deterministic statements can be safely removed. It leaves rand calls and record_cached! calls alone.
@@ -64,6 +65,9 @@ function substitute_get_value!(pr, v, st)
     expr = st.expr
     if expr.head == :call && expr.args[1] == cache && expr.args[2] isa QuoteNode
         pr[v] = xcall(GlobalRef(@__MODULE__, :record_cached!), self, expr.args[2])
+    end
+    if expr.head == :call && expr.args[1] == track && expr.args[2] isa QuoteNode
+        pr[v] = xcall(GlobalRef(@__MODULE__, :record_track!), self, expr.args[2])
     end
 end
 

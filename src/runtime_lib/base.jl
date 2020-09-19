@@ -222,3 +222,14 @@ end
 function ifelse(c::Bool, x, y)
     c ? x : y
 end
+
+function Base.:(:)(r1, r2::Diffed)
+    result = r1 : strip_diff(r2)
+    Diffed(result, Change())
+end
+
+# TODO: fix.
+function Base.iterate(r1::Diffed)
+    result = Base.iterate(strip_diff(r1))
+    Diffed(result, Change())
+end

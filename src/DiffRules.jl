@@ -33,7 +33,7 @@ export UnknownChange, NoChange
 export SetDiff, DictDiff, VectorDiff
 export IntDiff
 
-export track, cache, collect
+export track, cache, record, collect
 export Δ, change
 
 end # module

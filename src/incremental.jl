@@ -69,13 +69,15 @@ end
 
 @inline function record_cached!(ctx::IncrementalContext, addr)
     visit!(ctx, addr)
-    if haskey(ctx.addressed, addr)
-        sub = getindex(ctx.prev.addressed, addr)
-        ctx.addressed[addr] = sub
-    else
-        sub = getindex(ctx.prev.recursed, addr)
-        ctx.recursed[addr] = sub
-    end
+    sub = getindex(ctx.prev.addressed, addr)
+    ctx.addressed[addr] = sub
+    get_ret(sub)
+end
+
+@inline function record_track!(ctx::IncrementalContext, addr)
+    visit!(ctx, addr)
+    sub = getindex(ctx.prev.recursed, addr)
+    ctx.recursed[addr] = sub
     get_ret(sub)
 end
 
@@ -89,12 +91,13 @@ end
 # ------------ Tracing ------------ #
 
 @inline cache(addr, fn, args...) = fn(args...)
+@inline track(addr, fn, args...) = fn(args...)
 @abstract DiffPrimitives cache(addr, fn, args...) = propagate(args...)
+@abstract DiffPrimitives track(addr, fn, args...) = propagate(args...)
 
-whitelist = [
+whitelist = [:cache, :track,
              # Base.
-             :cache, :_apply_iterate, :collect,
-
+             :_apply_iterate, :collect,
             ]
 
 unwrap(gr::GlobalRef) = gr.name
@@ -123,8 +126,15 @@ end
 
 @inline function (mx::ExecutionContext)(::typeof(cache), addr, fn, args...)
     visit!(mx, addr)
-    ret, retdiff, graph = track(fn, args...)
-    record!(mx, addr, graph)
+    ret = fn(args...)
+    record!(mx, addr, CachedSite(fn, map(a -> strip_diff(a), args), strip_diff(ret)))
+    ret
+end
+
+@inline function (mx::ExecutionContext)(::typeof(track), addr, fn, args...)
+    visit!(mx, addr)
+    ret, retdiff, subgraph = record(fn, args...)
+    record!(mx, addr, subgraph)
     ret
 end
 
@@ -144,17 +154,24 @@ end
 
 @inline function (mx::IncrementalContext)(::typeof(cache), addr, fn, args...)
     visit!(mx, addr)
+    ret = fn(args...)
+    record!(mx, addr, CachedSite(fn, map(a -> strip_diff(a), args), strip_diff(ret)))
+    ret
+end
+
+@inline function (mx::IncrementalContext)(::typeof(track), addr, fn, args...)
+    visit!(mx, addr)
     if haskey(mx.recursed, addr)
         subgraph = get_subgraph(mx, addr)
         ret, retdiff, graph = change(subgraph, args...)
     else
-        ret, retdiff, graph = track(fn, args...)
+        ret, retdiff, graph = record(fn, args...)
     end
     record!(mx, addr, graph)
     retdiff
 end
 
-function track(fn, args...)
+function record(fn, args...)
     rec = RecordContext()
     ret = rec(fn, args...)
     return strip_diff(ret), ret, DynamicCallGraph(rec.addressed, 
